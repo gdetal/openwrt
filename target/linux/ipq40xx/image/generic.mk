@@ -43,7 +43,8 @@ define Build/append-rootfshdr
 		-O linux -T filesystem \
 		-C lzma -a $(KERNEL_LOADADDR) -e $(if $(KERNEL_ENTRY),$(KERNEL_ENTRY),$(KERNEL_LOADADDR)) \
 		-n root.squashfs -d $(IMAGE_ROOTFS) $@.new
-	dd if=$@.new bs=64 count=1 >> $(IMAGE_KERNEL)
+	cp -f $(IMAGE_KERNEL) $(call param_get_default,kernel,$(1),$(IMAGE_KERNEL))
+	dd if=$@.new bs=64 count=1 >> $(call param_get_default,kernel,$(1),$(IMAGE_KERNEL))
 endef
 
 define Build/mkmylofw_32m
@@ -64,7 +65,7 @@ endef
 
 define Build/qsdk-ipq-factory-nand-askey
 	$(TOPDIR)/scripts/mkits-qsdk-ipq-image.sh $@.its\
-		askey_kernel $(IMAGE_KERNEL) \
+		askey_kernel $(call param_get_default,kernel,$(1),$(IMAGE_KERNEL)) \
 		askey_fs $(IMAGE_ROOTFS) \
 		ubifs $@
 	PATH=$(LINUX_DIR)/scripts/dtc:$(PATH) mkimage -f $@.its $@.new
@@ -248,8 +249,8 @@ define Device/cellc_rtl30vw
 	KERNEL_NAME := Image
 	KERNEL_IN_UBI :=
 	IMAGES := nand-factory.bin nand-sysupgrade.bin
-	IMAGE/nand-factory.bin := append-rootfshdr | append-ubi | qsdk-ipq-factory-nand-askey
-	IMAGE/nand-sysupgrade.bin := append-rootfshdr | sysupgrade-tar | append-metadata
+	IMAGE/nand-factory.bin := append-rootfshdr kernel=$$$$(IMAGE_KERNEL).factory | append-ubi | qsdk-ipq-factory-nand-askey kernel=$$$$(IMAGE_KERNEL).factory
+	IMAGE/nand-sysupgrade.bin := append-rootfshdr kernel=$$$$(IMAGE_KERNEL).sysupgrade | sysupgrade-tar kernel=$$$$(IMAGE_KERNEL).sysupgrade | append-metadata
 	DEVICE_VENDOR := Cell C
 	DEVICE_MODEL := RTL30VW
 	SOC := qcom-ipq4019
